@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/4.2.0/redux.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    
+    <div id="subject"></div>
+    <div id="nav"></div>
+    <div id="control"></div>
+    <div id="article"></div>
+        
+        <script>
+            function reducer(state, action){
+                if(state===undefined){
+                    return {
+                        max_id:2,
+                        mode:'read',
+                        selectd_id:1,
+                        contents:[
+                            {id:1, title:'Javasciprt', desc:'Javascript is ...'},
+                            {id:2, title:'CSS', desc:'CSS is ...'},
+                        ]
+                    }
+                }
+                let newState;
+                if(action.type==='SELECT'){
+                    newState = Object.assign({}, state, {selectd_id:action.id, mode:action.mode})
+                }else if(action.type === 'CREATE'){
+                    let newMaxId = state.max_id + 1;
+                    let newContents = state.contents.concat();
+                    newContents.push({id: newMaxId,title:action.title, desc:action.desc});
+                    newState = Object.assign({}, state, {
+                        max_id:newMaxId,
+                        selectd_id:newMaxId,
+                        contents:newContents,
+                        mode:'read',
+                    })
+                }else if(action.type === 'DELETE'){
+                    let newContents = state.contents.filter(item=>item.id !== state.selectd_id)
+                    newState = Object.assign({}, state, {
+                        mode:'welcome',
+                        contents : newContents,
+                    })
+                }else if(action.type === 'UPDATE'){
+                    let newContents = [];
+                    newContents = state.contents.concat();
+                    let {title, desc} = action;
+                    for(let i=0; i<newContents.length; i++){
+                        
+                        if(newContents[i].id === state.selectd_id){
+                            
+                            newContents[i].title = title;
+                            newContents[i].desc = desc;
+                            break;
+                        }
+                    }
+                    newState = Object.assign({}, state, {
+                        mode : 'read',
+                        contents : newContents,
+                    })
+
+                }
+                
+                return newState;
+            }
+
+            var store = Redux.createStore(reducer);
+
+            subject();
+            nav();
+            control();
+            article();
+            store.subscribe(article);
+            store.subscribe(nav);
+
+            function subject(){
+                document.querySelector("#subject").innerHTML=`
+                <header>
+                    <h1>Redux CRUD</h1>
+                    hello redux !
+                </header>
+                `
+            }
+            
+
+            function nav(){
+                let state = store.getState();
+                let navTags = ``;
+
+                for(let i=0; i<state.contents.length; i++){
+                    navTags += `
+                        <li>
+                            <a onclick="
+                                let action = {type:'SELECT', id:${state.contents[i].id}, mode:'read'}
+                                store.dispatch(action)
+                            " href="#">
+                                ${state.contents[i].title}
+                            </a>
+                            <input onclick="
+                            let update_action = {type:'SELECT',id:${state.contents[i].id} ,mode:'update'}
+                            store.dispatch(update_action)
+                        " type="button" value="update">
+                        </li>
+                    `
+                }
+                document.querySelector("#nav").innerHTML=`
+                <nav>
+                    <ol>${navTags}</ol>
+                </nav>
+                `
+            }
+
+            function control(){
+                document.querySelector("#control").innerHTML=`
+                <ul>
+                    <li><a 
+                        onclick="
+                            event.preventDefault();
+                            let create_action = {type:'SELECT', mode:'create'}
+                            store.dispatch(create_action);
+                        "
+                        
+                        href="/create">Create</a></li>
+                    <li><input onclick="
+                            let action = {type:'DELETE'}
+                            store.dispatch(action)
+                        " type="button" value="Delete"></li>
+                    
+                </ul>
+                `
+            }
+
+            function article(){
+                let state = store.getState();
+                
+
+                if(state.mode === 'create'){
+                    document.querySelector("#article").innerHTML=`
+                    <article>
+                        <form onsubmit="
+                            event.preventDefault();
+                            let _title = this.title.value;
+                            let _desc = this.desc.value;
+                            store.dispatch({type:'CREATE', title:_title, desc:_desc})
+                        ">
+                            <p>
+                                <input type="text" name="title" placeholder="title"/>
+                            </p>
+                            <p>
+                                <textarea name="desc" placeholder="description"></textarea>
+                                </p>
+                                <p>
+                                    <input type="submit">
+                                    </p>
+                        </form>
+                    </article>
+                    `
+                }else if(state.mode === 'read'){
+                    let articleTitle, articleDesc;
+                    for(let i=0; i<state.contents.length; i++){
+                        if(state.contents[i].id === state.selectd_id){
+                            articleTitle = state.contents[i].title;
+                            articleDesc = state.contents[i].desc;
+                            break;
+                        }
+                    }
+                    document.querySelector("#article").innerHTML=`
+                    <article>
+                        <h2>${articleTitle}</h2>
+                        ${articleDesc}
+                    </article>
+                    `
+                }else if(state.mode === 'welcome'){
+                    document.querySelector("#article").innerHTML=`
+                    <article>
+                        <h2 >Welcome</h2>
+                        Welcome Redux ~!
+                    </article>
+                    `
+                }else if(state.mode==='update'){
+                    document.querySelector("#article").innerHTML=`
+                    <article>
+                        <form onsubmit="
+                            event.preventDefault();
+                            let _title = this.title.value;
+                            let _desc = this.desc.value;
+                            store.dispatch({type:'UPDATE', title:_title, desc:_desc})
+                        ">
+                            <p>
+                                <input type="text" name="title" placeholder="title"/>
+                            </p>
+                            <p>
+                                <textarea name="desc" placeholder="description"></textarea>
+                                </p>
+                                <p>
+                                    <input type="submit">
+                                    </p>
+                        </form>
+                    </article>
+                    `
+                }
+
+            }
+        </script>
+    </div>
+</body>
+</html>
